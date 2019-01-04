@@ -23,11 +23,12 @@ struct Cart {
     coord: [usize;2],
     o: Ori,
     prev: char,
+    alive: bool,
 }
 
 impl Ord for Cart {
     fn cmp(&self, other: &Cart) -> Ordering {
-        self.coord[0].cmp(&other.coord[0])
+        self.coord.cmp(&other.coord)
     }
 }
 
@@ -47,44 +48,47 @@ impl Cart {
 
     fn new(x: usize, y: usize, place: char) -> Cart {
         let mut or = Ori::up;
-        let cord = [x, y];
+        let cord = [y, x];
         let mut prev: char = '|';
-        if place == '>' {
+        if place == '<' {
             or = Ori::left;
             prev = '-';
         }
-        if place == '<' {
+        if place == '>' {
             or = Ori::right;
             prev = '-'
         }
         if place == 'v' {
             or = Ori::down;
         }
-        Cart {m: Move::left, coord: cord, o: or, prev: prev}
+        Cart {m: Move::left, coord: cord, o: or, prev: prev, alive: true}
     }
 
     fn shift (&mut self, g: &mut Vec<Vec<char>>) -> bool {
         let mut next: char = '.';
+        if !self.alive {
+            return true;
+        }
         match self.o {
             Ori::up => {
-                next = g[self.coord[1] + 1][self.coord[0]];
-                g[self.coord[1]][self.coord[0]] = self.prev;
-                self.coord[1] += 1;
+                next = g[self.coord[0] - 1][self.coord[1]];
+                g[self.coord[0]][self.coord[1]] = self.prev;
+                self.coord[0] -= 1;
             },
             Ori::down => {
-                next = g[self.coord[1] - 1][self.coord[0]];
-                g[self.coord[1]][self.coord[0]] = self.prev;
-                self.coord[1] -= 1;
-            },
-            Ori::right => {
-                next = g[self.coord[1]][self.coord[0] + 1];
-                g[self.coord[1]][self.coord[0]] = self.prev;
+                next = g[self.coord[0] + 1][self.coord[1]];
+                g[self.coord[0]][self.coord[1]] = self.prev;
                 self.coord[0] += 1;
             },
+            Ori::right => {
+                next = g[self.coord[0]][self.coord[1] + 1];
+                g[self.coord[0]][self.coord[1]] = self.prev;
+                self.coord[1] += 1;
+            },
             Ori::left => {
-                next = g[self.coord[1]][self.coord[0] - 1];
-                g[self.coord[1]][self.coord[0]] = self.prev;
-                self.coord[0] -= 1;
+                next = g[self.coord[0]][self.coord[1] - 1];
+                g[self.coord[0]][self.coord[1]] = self.prev;
+                self.coord[1] -= 1;
             },
         }
 
@@ -130,13 +134,14 @@ impl Cart {
             }
         }
         match self.o {
-            Ori::up => g[self.coord[1]][self.coord[0]] = '^',
-            Ori::down => g[self.coord[1]][self.coord[0]] = 'v',
-            Ori::right => g[self.coord[1]][self.coord[0]] = '>',
-            Ori::left => g[self.coord[1]][self.coord[0]] = '<',
+            Ori::up => g[self.coord[0]][self.coord[1]] = '^',
+            Ori::down => g[self.coord[0]][self.coord[1]] = 'v',
+            Ori::right => g[self.coord[0]][self.coord[1]] = '>',
+            Ori::left => g[self.coord[0]][self.coord[1]] = '<',
         }
         self.prev = next;
-        if next == '<' || next == '^' || next == 'v' || next == '<' {
+        if next == '<' || next == '^' || next == 'v' || next == '>' {
+            self.alive = false;
             return false;
         }
         true
@@ -148,25 +153,49 @@ fn main() {
     let mut content = String::new();
     f.read_to_string(&mut content).expect("error");
     let mut g: Vec<Vec<char>> = Vec::new();
-    let mut index: usize = 0;
     for line in content.split('\n') {
-        g[index] = line.chars().collect();
-        index += 1;
+        if line.len() < 5 {
+            break;
+        }
+        g.push(line.chars().collect());
     }
     let mut carts: Vec<Cart> = Vec::new();
     for y in 0..g.len() {
         for x in 0..g[y].len() {
-            if g[y][x] == '<' || g[y][x] == '^' || g[y][x] == 'v' || g[y][x] == '<' {
+            if g[y][x] == '<' || g[y][x] == '^' || g[y][x] == 'v' || g[y][x] == '>' {
                 let cart = Cart::new(x, y, g[y][x]);
                 carts.push(cart);
             }
         }
     }
+    carts.sort();
     loop {
-        for cart in carts.iter_mut() {
-            if !cart.shift(&mut g) {
-                println!("x: {} y: {}", cart.coord[0], cart.coord[1])
+        let mut flag = true;
+        for i in 0..carts.len() {
+            if !carts[i].shift(&mut g) {
+                println!("HIT X: {}, Y: {}", carts[i].coord[1], carts[i].coord[0]);
+                for x in 0..carts.len() {
+                    if carts[i].coord == carts[x].coord && carts[x].alive {
+                        g[carts[i].coord[0]][carts[i].coord[1]] = carts[x].prev;
+                        carts[x].alive = false;
+                        println!("Match! X: {}, Y: {}", carts[x].coord[1], carts[x].coord[0]);
+                    }
+                }
             }
+        }
+        let mut count: usize = 0;
+        for cart in carts.iter() {
+            if cart.alive {
+                count += 1;
+            }
+        }
+        if count == 1 {
+            for cart in carts.iter() {
+                if cart.alive {
+                    println!("Final:: X: {}, Y: {}", cart.coord[1], cart.coord[0]);
+                }
+            }
+            break;
         }
         carts.sort();
     }
