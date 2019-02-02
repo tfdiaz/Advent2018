@@ -270,7 +270,7 @@ fn eqrr(reg: [usize;4], input: [usize;4], output: [usize;4]) -> usize {
 }
 
 fn findops(reg: [usize;4], input: [usize;4], output: [usize;4],
-        args: &Vec<&Fn([usize;4], [usize;4], [usize;4]) -> usize>) -> usize {
+        args: &Vec<&Fn([usize;4], [usize;4], [usize;4]) -> usize>, table: &mut[[bool;16];16]) -> usize {
     let mut ct: usize = 0;
     for i in 0..16 {
         ct += (args[i])(reg, input, output);
@@ -279,6 +279,10 @@ fn findops(reg: [usize;4], input: [usize;4], output: [usize;4],
         return 1;
     }
     0
+}
+
+fn reduce(table: [[bool;16]16]) -> [usize;16] {
+    
 }
 
 fn main() {
@@ -291,6 +295,7 @@ fn main() {
     let mut output: [usize;4] = [0;4];
     let mut args: Vec<&Fn([usize;4], [usize;4], [usize;4]) -> usize> = Vec::new();
     let mut tot: usize = 0;
+    let mut table: [[bool;16]; 16] = [[false;16];16];
     args = vec![&addr, &addi, &mulr, &muli, &banr, &bani, &borr, &bori, &setr, &seti, &gtir,
                  &gtri, &gtrr, &eqir, &eqri, &eqrr];
 
@@ -327,9 +332,11 @@ fn main() {
                     .parse::<usize>().expect("8");
             output[3] = cont[4].trim_end_matches(']')
                     .parse::<usize>().expect("9");
-            tot += findops(reg, input, output, &args);
+            tot += findops(reg, input, output, &args, &mut table);
         }
         switch += 1;
     }
+    let index: [usize:16] = reduce(table);
+
     println!("Tot: {}", tot);
 }
