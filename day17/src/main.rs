@@ -9,8 +9,34 @@ enum State {
     water,
 }
 
-fn leftbound(board: [[State;1000];2000], x: usize, y: usize) -> bool {
-    
+fn leftbound(board: &[[State;1000];2000], x: usize, y: usize) -> bool {
+    for i in (x +1)..0 {
+        if board[y][i] == State::clay && (board[y + 1][i] == State::clay || board[y + 1][i] == State::water) {
+            return true;
+        }
+        if board[y][i] == State::sand && board[y + 1][i] == State::clay {
+            return true;
+        }
+        if board[y][i] == State::sand && board[y + 1][i] == State::sand {
+            return false;
+        }
+    }
+    false
+}
+
+fn rightbound(board: &[[State;1000];2000], x: usize, y: usize) -> bool {
+    for i in x..1000 {
+        if board[y][i] == State::clay && (board[y + 1][i] == State::clay || board[y + 1][i] == State::water) {
+            return true;
+        }
+        if board[y][i] == State::sand && board[y + 1][i] == State::clay {
+            return true;
+        }
+        if board[y][i] == State::sand && board[y + 1][i] == State::sand {
+            return false;
+        }
+    }
+    false
 }
 
 fn main() {
@@ -55,10 +81,8 @@ fn main() {
         let mut cord = streams.pop_front().unwrap();
         let mut x = cord[0];
         let mut y = cord[1];
-        //println!("Outer");
         while y <= ymax {
             let mut leftfall = false;
-            //println!("Inner");
             if board[y][x] == State::sand {
                 board[y][x] = State::water;
                 ct += 1;
@@ -70,9 +94,9 @@ fn main() {
                 let mut tmp_y = y;
                 let mut flag = false;
                 loop {
-                    if board[tmp_y][x] == State::sand {
-                        let mut tmp_x = x;
-                        if rightbound(&board, tmp_y, x) {
+                    if board[tmp_y][x - 1] == State::sand {
+                        let mut tmp_x = x - 1;
+                        if leftbound(&board, tmp_x, tmp_y) {
                             while board[tmp_y][tmp_x] != State::clay {
                                 board[tmp_y][tmp_x] = State::water;
                                 if board[tmp_y + 1][tmp_x] == State::sand {
@@ -84,7 +108,7 @@ fn main() {
                             }
                         }
                     }
-                    if leftbound(&board, tmp_y, x) {
+                    if rightbound(&board, x, tmp_y) {
                         let mut tmp_x = x + 1;
                         while board[tmp_y][tmp_x] != State::clay {
                             board[tmp_y][tmp_x] = State::water;
@@ -99,13 +123,13 @@ fn main() {
                         }
                     }
                     else {
+                        println!("Jere");
                         break;
                     }
                     if flag || leftfall {
                         break;
                     }
                     tmp_y -= 1;
-                }
             for j in 0..100 {
             for k in 400..600 {
                 if j != y + 1 || k != x {
@@ -121,6 +145,8 @@ fn main() {
             }
             println!("");
             }
+                }
+                break;
             }
             else if board[y + 1][x] == State::clay {
                 let mut flag = true;
@@ -163,15 +189,15 @@ fn main() {
             }
     }
     }
-    // for y in 0..100 {
-    //     for x in 400..600 {
-    //         match board[y][x] {
-    //             State::sand => print!("."),
-    //             State::clay => print!("#"),
-    //             State::water => print!("~"),
-    //         }
-    //     }
-    //     println!("");
-    // }
+    for y in 0..100 {
+        for x in 400..600 {
+            match board[y][x] {
+                State::sand => print!("."),
+                State::clay => print!("#"),
+                State::water => print!("~"),
+            }
+        }
+        println!("");
+    }
     println!("{}",ymax);
 }
